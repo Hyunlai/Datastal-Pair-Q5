@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
+import API from "../api/axios";
+
 // Initial state
 const initialState = {
   conversations: [],  // List of all conversations
@@ -8,56 +10,57 @@ const initialState = {
   error: null,
 };
 
-// Dummy fetch all conversations
 export const getConversations = createAsyncThunk(
   "conversations/getAll",
-  async () => {
-    // Replace with backend API call later
-    return [
-      {
-        _id: "1",
-        title: "Zeus and the Olympian Gods",
-        created_at: "2026-03-05",
-      },
-      {
-        _id: "2",
-        title: "Thor and Norse Mythology",
-        created_at: "2026-03-04",
-      },
-    ];
+  async (_, thunkAPI) => {
+    try {
+      const response = await API.get("conversations/");
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.detail || "Failed to load conversations"
+      );
+    }
   }
 );
 
-// Fetch single conversation details (messages)
 export const getConversationDetail = createAsyncThunk(
   "conversations/getDetail",
-  async (conversationId) => {
-    // Replace with backend API call later
-    return {
-      conversationId,
-      messages: [
-        { role: "user", content: "Tell me about Zeus" },
-        { role: "assistant", content: "Zeus is the king of the Greek gods, ruling from Mount Olympus." },
-        { role: "user", content: "What are his symbols?" },
-        { role: "assistant", content: "Zeus is associated with the lightning bolt, eagle, bull, and oak tree." },
-      ],
-    };
+  async (conversationId, thunkAPI) => {
+    try {
+      const response = await API.get(`conversations/${conversationId}/`);
+      return {
+        conversationId,
+        messages: response.data.messages || [],
+      };
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.detail || "Failed to load messages"
+      );
+    }
   }
 );
 
-// Send message (user + assistant reply simulation)
 export const sendMessage = createAsyncThunk(
   "conversations/sendMessage",
-  async ({ conversationId, content }) => {
-    // Replace with backend call
-    return {
-      conversationId,
-      newMessage: { role: "user", content },
-      assistantReply: {
-        role: "assistant",
-        content: "This is a dummy assistant reply to: " + content,
-      },
-    };
+  async ({ conversationId, content }, thunkAPI) => {
+    try {
+      const payload = {
+        conversation_id: conversationId,
+        content,
+      };
+
+      const response = await API.post("conversation/", payload);
+
+      return {
+        conversationId: response.data.conversation_id,
+        messages: response.data.messages || [],
+      };
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.detail || "Failed to send message"
+      );
+    }
   }
 );
 
@@ -86,9 +89,9 @@ const conversationSlice = createSlice({
         state.loading = false;
         state.conversations = action.payload;
       })
-      .addCase(getConversations.rejected, (state) => {
+      .addCase(getConversations.rejected, (state, action) => {
         state.loading = false;
-        state.error = "Failed to load conversations";
+        state.error = action.payload || "Failed to load conversations";
       })
 
       // Get conversation detail
@@ -101,9 +104,9 @@ const conversationSlice = createSlice({
         state.loading = false;
         state.messages = action.payload.messages;
       })
-      .addCase(getConversationDetail.rejected, (state) => {
+      .addCase(getConversationDetail.rejected, (state, action) => {
         state.loading = false;
-        state.error = "Failed to load messages";
+        state.error = action.payload || "Failed to load messages";
       })
 
       // Send message
@@ -113,12 +116,11 @@ const conversationSlice = createSlice({
       })
       .addCase(sendMessage.fulfilled, (state, action) => {
         state.loading = false;
-        state.messages.push(action.payload.newMessage);
-        state.messages.push(action.payload.assistantReply);
+        state.messages = action.payload.messages;
       })
-      .addCase(sendMessage.rejected, (state) => {
+      .addCase(sendMessage.rejected, (state, action) => {
         state.loading = false;
-        state.error = "Failed to send message";
+        state.error = action.payload || "Failed to send message";
       });
   },
 });

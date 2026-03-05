@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
+import API from "../api/axios";
+
 const initialState = {
   userInfo: null,
   loading: false,
@@ -8,25 +10,59 @@ const initialState = {
 
 export const login = createAsyncThunk(
   "auth/login",
-  async (data) => {
-    
-    return {
-      email: data.email,
-      token: "dummy_token",
-    };
+  async (data, thunkAPI) => {
+    try {
+      // Backend signin expects username + password; UI currently captures email + password.
+      const payload = {
+        username: data.email,
+        password: data.password,
+      };
 
+      const response = await API.post("auth/signin/", payload);
+
+      const userInfo = {
+        user: response.data.user,
+        access: response.data.access,
+        refresh: response.data.refresh,
+      };
+
+      localStorage.setItem("accessToken", response.data.access);
+      localStorage.setItem("refreshToken", response.data.refresh);
+
+      return userInfo;
+    } catch (error) {
+      const message =
+        error.response?.data?.detail ||
+        error.response?.data?.non_field_errors?.[0] ||
+        "Login failed";
+
+      return thunkAPI.rejectWithValue(message);
+    }
   }
 );
 
 export const register = createAsyncThunk(
   "auth/register",
-  async (data) => {
+  async (data, thunkAPI) => {
+    try {
+      const payload = {
+        username: data.email,
+        email: data.email,
+        password: data.password,
+      };
 
-    // dummy register
-    return {
-      email: data.email,
-    };
+      const response = await API.post("auth/signup/", payload);
+      return response.data;
+    } catch (error) {
+      const fieldErrors = error.response?.data;
+      const message =
+        fieldErrors?.username?.[0] ||
+        fieldErrors?.email?.[0] ||
+        fieldErrors?.password?.[0] ||
+        "Register failed";
 
+      return thunkAPI.rejectWithValue(message);
+    }
   }
 );
 
@@ -37,6 +73,8 @@ const authSlice = createSlice({
   reducers: {
     logout: (state) => {
       state.userInfo = null;
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
     },
   },
 
@@ -53,9 +91,9 @@ const authSlice = createSlice({
         state.userInfo = action.payload;
       })
 
-      .addCase(login.rejected, (state) => {
+      .addCase(login.rejected, (state, action) => {
         state.loading = false;
-        state.error = "Login failed";
+        state.error = action.payload || "Login failed";
       })
 
       .addCase(register.pending, (state) => {
@@ -66,9 +104,9 @@ const authSlice = createSlice({
         state.loading = false;
       })
 
-      .addCase(register.rejected, (state) => {
+      .addCase(register.rejected, (state, action) => {
         state.loading = false;
-        state.error = "Register failed";
+        state.error = action.payload || "Register failed";
       });
 
   },
