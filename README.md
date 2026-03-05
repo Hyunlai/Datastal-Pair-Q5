@@ -4,6 +4,13 @@ Simple full-stack project with:
 - `frontend/`: React + Redux + Vite
 - `backend/`: Django + DRF + JWT auth + AI chat integration
 
+## 0. Prerequisites
+
+- Python 3.11+
+- Node.js 18+
+- npm
+- Git
+
 ---
 
 ## 1. Clone The Project
@@ -11,6 +18,12 @@ Simple full-stack project with:
 ```bash
 git clone https://github.com/Hyunlai/Datastal-Pair-Q5.git
 cd Datastal-Pair-Q5
+```
+
+If PowerShell blocks venv activation, run this once:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
 
 ---
@@ -50,6 +63,10 @@ GEMINI_API_KEY=your_gemini_api_key
 GEMINI_MODEL=gemini-2.5-flash
 AI_ALLOWED_TOPIC=mythology
 ```
+
+Important:
+- Never commit `.env`.
+- If a key was exposed, rotate it immediately in your provider dashboard.
 
 Example (OpenAI):
 
