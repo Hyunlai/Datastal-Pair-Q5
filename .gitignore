@@ -1,4 +1,4 @@
-# Python
+# Python cache
 __pycache__/
 *.py[cod]
 *.pyo
@@ -7,6 +7,13 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .mypy_cache/
+
+# Django local database
+*.sqlite3
+db.sqlite3
+
+# Environment variables
+.env
 
 # Virtual environments
 venv/
