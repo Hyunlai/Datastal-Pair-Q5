@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from .ai_service import generate_ai_reply
 from .models import Conversation, Message
 from .serializers import ConversationCreateSerializer, ConversationSerializer
 
@@ -15,21 +16,41 @@ def chat_view(request):
 	serializer.is_valid(raise_exception=True)
 
 	content = serializer.validated_data['resolved_content']
-	raw_title = serializer.validated_data.get('title', '').strip()
-	conversation_title = raw_title or content[:50]
+	conversation_id = serializer.validated_data.get('conversation_id')
 
-	conversation = Conversation.objects.create(
-		user=request.user,
-		title=conversation_title,
-	)
+	if conversation_id:
+		conversation = get_object_or_404(Conversation, _id=conversation_id, user=request.user)
+	else:
+		raw_title = serializer.validated_data.get('title', '').strip()
+		conversation_title = raw_title or content[:50]
+		conversation = Conversation.objects.create(
+			user=request.user,
+			title=conversation_title,
+		)
+
 	Message.objects.create(
 		conversation=conversation,
 		role=Message.ROLE_USER,
 		content=content,
 	)
 
+	try:
+		ai_reply = generate_ai_reply(conversation=conversation, user_prompt=content)
+	except Exception as exc:
+		return Response(
+			{'detail': f'AI provider error: {exc}'},
+			status=status.HTTP_502_BAD_GATEWAY,
+		)
+
+	Message.objects.create(
+		conversation=conversation,
+		role=Message.ROLE_ASSISTANT,
+		content=ai_reply,
+	)
+
 	output = ConversationSerializer(conversation)
-	return Response(output.data, status=status.HTTP_201_CREATED)
+	http_status = status.HTTP_200_OK if conversation_id else status.HTTP_201_CREATED
+	return Response(output.data, status=http_status)
 
 
 @api_view(['GET'])

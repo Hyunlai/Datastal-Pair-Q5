@@ -11,6 +11,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 class ConversationCreateSerializer(serializers.Serializer):
+    conversation_id = serializers.UUIDField(required=False)
     title = serializers.CharField(max_length=255, required=False, allow_blank=True)
     content = serializers.CharField(required=False, allow_blank=True)
     prompt = serializers.CharField(required=False, allow_blank=True)
