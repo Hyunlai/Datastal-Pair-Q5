@@ -14,6 +14,10 @@ const EmptyState = () => {
         Ask about gods, heroes, and legends.
       </p>
 
+      <p className="mb-0">
+        Use the "Start New Mythology Conversation" box above to begin.
+      </p>
+
     </div>
   );
 };

@@ -46,9 +46,12 @@ export const sendMessage = createAsyncThunk(
   async ({ conversationId, content }, thunkAPI) => {
     try {
       const payload = {
-        conversation_id: conversationId,
         content,
       };
+
+      if (conversationId) {
+        payload.conversation_id = conversationId;
+      }
 
       const response = await API.post("conversation/", payload);
 
