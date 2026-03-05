@@ -6,7 +6,7 @@ from rest_framework.response import Response
 
 from .ai_service import generate_ai_reply
 from .models import Conversation, Message
-from .serializers import ConversationCreateSerializer, ConversationSerializer
+from .serializers import ConversationCreateSerializer, ConversationSerializer, MessageSerializer
 
 
 @api_view(['POST'])
@@ -28,29 +28,36 @@ def chat_view(request):
 			title=conversation_title,
 		)
 
-	Message.objects.create(
+	user_message = Message.objects.create(
 		conversation=conversation,
 		role=Message.ROLE_USER,
 		content=content,
 	)
 
 	try:
-		ai_reply = generate_ai_reply(conversation=conversation, user_prompt=content)
+		ai_reply = generate_ai_reply(conversation=conversation)
 	except Exception as exc:
 		return Response(
 			{'detail': f'AI provider error: {exc}'},
 			status=status.HTTP_502_BAD_GATEWAY,
 		)
 
-	Message.objects.create(
+	assistant_message = Message.objects.create(
 		conversation=conversation,
 		role=Message.ROLE_ASSISTANT,
 		content=ai_reply,
 	)
 
-	output = ConversationSerializer(conversation)
+	conversation_data = ConversationSerializer(conversation).data
+	response_data = {
+		'conversation_id': conversation_data['_id'],
+		'title': conversation_data['title'],
+		'latest_user_message': MessageSerializer(user_message).data,
+		'latest_assistant_message': MessageSerializer(assistant_message).data,
+		'messages': conversation_data['messages'],
+	}
 	http_status = status.HTTP_200_OK if conversation_id else status.HTTP_201_CREATED
-	return Response(output.data, status=http_status)
+	return Response(response_data, status=http_status)
 
 
 @api_view(['GET'])

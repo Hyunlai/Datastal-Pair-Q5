@@ -4,7 +4,7 @@ from openai import OpenAI
 from .models import Conversation
 
 
-def generate_ai_reply(conversation: Conversation, user_prompt: str) -> str:
+def generate_ai_reply(conversation: Conversation) -> str:
     if not settings.OPENAI_API_KEY:
         raise RuntimeError('OPENAI_API_KEY is not configured.')
 
@@ -21,7 +21,6 @@ def generate_ai_reply(conversation: Conversation, user_prompt: str) -> str:
     messages = [
         {'role': 'system', 'content': system_prompt},
         *history,
-        {'role': 'user', 'content': user_prompt},
     ]
 
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
